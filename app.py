@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, request
 from core.engine import Engine
 from integration.event_bridge import generate_seed_events
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="ui/templates")
 engine = Engine()
 
 # seed nodes (platoon-like representatives)
