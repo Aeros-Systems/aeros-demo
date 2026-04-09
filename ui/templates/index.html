@@ -50,7 +50,7 @@
   </div>
 
 <script>
-let sim = {};   
+let sim = { nodes: {}, tasks: {}, cycle_state: {} };   
 const map = document.getElementById('map');
 const ctx = map.getContext('2d');
 const W = map.width, H = map.height;
@@ -95,6 +95,7 @@ function drawTask(id, t) {
 }
 
 function render() {
+  if (!sim) return;
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = '#f8fafc';
   ctx.fillRect(0,0,W,H);
@@ -105,10 +106,10 @@ function render() {
     ctx.beginPath(); ctx.moveTo(0,i*H/10); ctx.lineTo(W,i*H/10); ctx.stroke();
   }
 
-  for (const [id, t] of Object.entries(sim.tasks || {})) drawTask(id, t);
-  for (const [id, n] of Object.entries(sim.nodes || {})) drawNode(id, n);
+  for (const [id, t] of Object.entries(sim.tasks || {})) { // drawTask }
+  for (const [id, n] of Object.entries(sim.nodes || {})) { // drawNode }
 
-  const c = sim.cycle_state || {};
+  const c = sim && sim.cycle_state ? sim.cycle_state : {};
   document.getElementById('done').innerText = c.done ?? 0;
   document.getElementById('active').innerText = c.active ?? 0;
   document.getElementById('pending').innerText = c.pending ?? 0;
