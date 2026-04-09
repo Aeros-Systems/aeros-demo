@@ -54,8 +54,6 @@ let sim = { nodes: {}, tasks: {}, cycle_state: {} };
 const map = document.getElementById('map');
 const ctx = map.getContext('2d');
 const W = map.width, H = map.height;
-let sim = {tasks:{}, nodes:{}, cycle_state:{}};
-
 function worldToCanvas(x, y) {
   return [x/100 * W, H - (y/100 * H)];
 }
