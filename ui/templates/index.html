@@ -10,6 +10,9 @@
     .panel { background: #111827; border: 1px solid #334155; border-radius: 12px; padding: 15px;box-shadow: 0 0 20px rgba(0,0,0,0.40; }
     button, select { padding: 10px 12px; border-radius: 8px; border: 1px solid #334155; background: #1f2937; color: #e2e8f0; cursor: pointer; }
     button:hover { background:2d3a4f; }
+    #continuity.NORMAL { color #22c55e; } /* green */
+    #continuity.WARNING { color #f59e0b; } /* orange */
+    #continuity.CRITICAL { color #ef4444; } /* red */
     #map { background:linear-gradient(#1e293b 1px,transparent 1px),linear-gradient(90deg, #1e239b 1px,transparent 1px), #0b1220; background-size: 40px 40px; border-radius: 12px; width: 900px; height: 600px; }
   h1 { color: #e2e8f0; }
   h2 { color: #7aa2ff }
@@ -47,6 +50,7 @@
   </div>
 
 <script>
+let sim = {};   
 const map = document.getElementById('map');
 const ctx = map.getContext('2d');
 const W = map.width, H = map.height;
