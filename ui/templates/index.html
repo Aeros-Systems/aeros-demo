@@ -1,119 +1,171 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>AEROS SYSTEMS</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #0f172a; color: #e2e8f0; }
-    .wrap { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-    .panel { background: #111827; border: 1px solid #334155; border-radius: 12px; padding: 15px;box-shadow: 0 0 20px rgba(0,0,0,0.40; }
-    button, select { padding: 10px 12px; border-radius: 8px; border: 1px solid #334155; background: #1f2937; color: #e2e8f0; cursor: pointer; }
-    button:hover { background:2d3a4f; }
-    #continuity.NORMAL { color #22c55e; } /* green */
-    #continuity.WARNING { color #f59e0b; } /* orange */
-    #continuity.CRITICAL { color #ef4444; } /* red */
-    #map { background:linear-gradient(#1e293b 1px,transparent 1px),linear-gradient(90deg, #1e239b 1px,transparent 1px), #0b1220; background-size: 40px 40px; border-radius: 12px; width: 900px; height: 600px; }
-  h1 { color: #e2e8f0; }
-  h2 { color: #7aa2ff }
-    .stat { margin: 8px 0; }
-    .stat {font-weight:bold;color:#7aa2ff;}
-  </style>
+<meta charset="utf-8">
+<title>AEROS SYSTEMS</title>
+
+<style>
+body {
+  font-family: Arial;
+  margin: 20px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.wrap {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.40);
+}
+
+button, select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1f2937;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+button:hover { background:#2d3a4f; }
+
+#continuity.NORMAL { color: #22c55e; }
+#continuity.WARNING { color: #f59e0b; }
+#continuity.CRITICAL { color: #ef4444; }
+
+#map {
+  background: #0b1220;
+  border-radius: 12px;
+  width: 900px;
+  height: 600px;
+}
+
+h1 { color: #e2e8f0; }
+h2 { color: #7aa2ff; }
+
+.stat {
+  margin: 8px 0;
+  font-weight: bold;
+  color: #7aa2ff;
+}
+</style>
 </head>
+
 <body>
-  <h2 style="margin-bottom: 10px;color:#7aa2FF;letter-spacing:1px">NEXUS CONTROL PANEL</h2>  
-  <h1>AEROS - Command Interface</h1>
-  <div class="wrap">
-    <div class="panel">
-      <div>
-        <label>NEXUS TASK INJECTION</label><br> 
-        <select id="eventType">
-          <option value="suppression">Suppression</option>
-          <option value="forward">Forward / flare-up</option>
-        </select>
-      </div>
-      <div style="margin-top:12px; display:flex; gap:10px;">
-        <button onclick="stepOnce()">EXECUTE CYCLE</button>
-        <button onclick="stepAuto()">AUTO EXECUTE x10</button>
-      </div>
-      <div class="stat">Tasks Completed: <span id="done">0</span></div>
-      <div class="stat">Tasks Active: <span id="active">0</span></div>
-      <div class="stat">Tasks Pending: <span id="pending">0</span></div>
-      <div class="stat">System Continuity: <span id="continuity">NORMAL</span></div>
-      <div class="stat">Resources: <span id="resources">1.0</span></div>
-      <div class="stat">Reinforcement: <span id="reinforcement">none</span></div>
-      <p>Click on the map to inject a task into the NEXUS system.</p>
-    </div>
-    <div class="panel">
-      <canvas id="map" width="900" height="600"></canvas>
-    </div>
-  </div>
+
+<h2>NEXUS CONTROL PANEL</h2>
+<h1>AEROS - Command Interface</h1>
+
+<div class="wrap">
+
+<div class="panel">
+<label>NEXUS TASK INJECTION</label><br>
+
+<select id="eventType">
+<option value="suppression">Suppression</option>
+<option value="forward">Forward / flare-up</option>
+</select>
+
+<div style="margin-top:12px;">
+<button onclick="stepOnce()">EXECUTE</button>
+</div>
+
+<div class="stat">Done: <span id="done">0</span></div>
+<div class="stat">Active: <span id="active">0</span></div>
+<div class="stat">Pending: <span id="pending">0</span></div>
+</div>
+
+<div class="panel">
+<canvas id="map" width="900" height="600"></canvas>
+</div>
+
+</div>
 
 <script>
-let sim = { nodes: {}, tasks: {}, cycle_state: {} };   
+
+let sim = { nodes: {}, tasks: {}, cycle_state: {} };
+
 const map = document.getElementById('map');
 const ctx = map.getContext('2d');
 const W = map.width, H = map.height;
+
 function worldToCanvas(x, y) {
   return [x/100 * W, H - (y/100 * H)];
 }
 
 function drawNode(id, n) {
   const [x, y] = worldToCanvas(n.position[0], n.position[1]);
-  ctx.save();
+
   let color = '#3b82f6';
   if (n.role === 'forward') color = '#ef4444';
   if (n.role === 'corridor') color = '#22c55e';
+
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(x, y, 9, 0, Math.PI*2);
+  ctx.arc(x, y, 8, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = '#111827';
+
+  ctx.fillStyle = '#ffffff';
   ctx.fillText(id, x + 10, y - 8);
-  ctx.restore();
 }
 
 function drawTask(id, t) {
   const [x, y] = worldToCanvas(t.location[0], t.location[1]);
-  ctx.save();
+
   if (t.status === 'PENDING') {
-    ctx.strokeStyle = '#111827';
-    ctx.beginPath();
-    ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6);
-    ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6);
-    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeRect(x-5, y-5, 10, 10);
+
   } else if (t.status === 'ACTIVE') {
-    ctx.fillStyle = t.type === 'forward' ? '#f97316' : '#fb923c';
-    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'orange';
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI*2);
+    ctx.fill();
+
   } else {
     ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(x-5, y-5, 10, 10);
+    ctx.fillRect(x-4, y-4, 8, 8);
   }
-  ctx.restore();
 }
 
 function render() {
-  if (!sim) return;
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = '#f8fafc';
+
+  ctx.fillStyle = '#0b1220';
   ctx.fillRect(0,0,W,H);
 
+  ctx.strokeStyle = '#1e293b';
   for (let i=0;i<=10;i++){
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.beginPath(); ctx.moveTo(i*W/10,0); ctx.lineTo(i*W/10,H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,i*H/10); ctx.lineTo(W,i*H/10); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(i*W/10,0);
+    ctx.lineTo(i*W/10,H);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0,i*H/10);
+    ctx.lineTo(W,i*H/10);
+    ctx.stroke();
   }
 
-  for (const [id, t] of Object.entries(sim.tasks || {})) { // drawTask }
-  for (const [id, n] of Object.entries(sim.nodes || {})) { // drawNode }
+  for (const [id, t] of Object.entries(sim.tasks || {})) {
+    drawTask(id, t);
+  }
 
-  const c = sim && sim.cycle_state ? sim.cycle_state : {};
+  for (const [id, n] of Object.entries(sim.nodes || {})) {
+    drawNode(id, n);
+  }
+
+  const c = sim.cycle_state || {};
   document.getElementById('done').innerText = c.done ?? 0;
   document.getElementById('active').innerText = c.active ?? 0;
   document.getElementById('pending').innerText = c.pending ?? 0;
-  document.getElementById('continuity').innerText = c.continuity ?? 'NORMAL';
-  document.getElementById('resources').innerText = c.resources ?? 1.0;
-  document.getElementById('reinforcement').innerText = c.reinforcement && c.reinforcement.request ? c.reinforcement.type + ' / ' + c.reinforcement.urgency : 'none';
 }
 
 async function stepOnce() {
@@ -122,19 +174,15 @@ async function stepOnce() {
   render();
 }
 
-async function stepAuto() {
-  for (let i=0;i<10;i++) {
-    await stepOnce();
-    await new Promise(r => setTimeout(r, 200));
-  }
-}
-
 map.addEventListener('click', async (ev) => {
+
   const rect = map.getBoundingClientRect();
   const cx = ev.clientX - rect.left;
   const cy = ev.clientY - rect.top;
+
   const x = (cx / W) * 100;
   const y = ((H - cy) / H) * 100;
+
   const type = document.getElementById('eventType').value;
 
   await fetch('/add_event', {
@@ -142,10 +190,13 @@ map.addEventListener('click', async (ev) => {
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({x, y, type})
   });
+
   await stepOnce();
 });
 
 stepOnce();
+
 </script>
+
 </body>
 </html>
