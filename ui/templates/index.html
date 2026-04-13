@@ -7,54 +7,35 @@
 <style>
 body {
   font-family: Arial;
-  margin: 20px;
-  background: #0f172a;
-  color: #e2e8f0;
+  background:#0f172a;
+  color:#e2e8f0;
+  margin:20px;
 }
 
 .wrap {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 20px;
+  display:grid;
+  grid-template-columns:320px 1fr;
+  gap:20px;
 }
 
 .panel {
-  background: #111827;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.40);
+  background:#111827;
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:15px;
 }
 
-button, select {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: #1f2937;
-  color: #e2e8f0;
-  cursor: pointer;
+button {
+  padding:10px;
+  background:#1f2937;
+  color:white;
+  border:1px solid #334155;
 }
-
-button:hover { background:#2d3a4f; }
-
-#continuity.NORMAL { color: #22c55e; }
-#continuity.WARNING { color: #f59e0b; }
-#continuity.CRITICAL { color: #ef4444; }
 
 #map {
-  background: #0b1220;
-  border-radius: 12px;
-  width: 900px;
-  height: 600px;
-}
-
-h1 { color: #e2e8f0; }
-h2 { color: #7aa2ff; }
-
-.stat {
-  margin: 8px 0;
-  font-weight: bold;
-  color: #7aa2ff;
+  background:#0b1220;
+  width:900px;
+  height:600px;
 }
 </style>
 </head>
@@ -62,25 +43,15 @@ h2 { color: #7aa2ff; }
 <body>
 
 <h2>NEXUS CONTROL PANEL</h2>
-<h1>AEROS - Command Interface</h1>
 
 <div class="wrap">
 
 <div class="panel">
-<label>NEXUS TASK INJECTION</label><br>
+<button onclick="step()">EXECUTE</button>
 
-<select id="eventType">
-<option value="suppression">Suppression</option>
-<option value="forward">Forward / flare-up</option>
-</select>
-
-<div style="margin-top:12px;">
-<button onclick="stepOnce()">EXECUTE</button>
-</div>
-
-<div class="stat">Done: <span id="done">0</span></div>
-<div class="stat">Active: <span id="active">0</span></div>
-<div class="stat">Pending: <span id="pending">0</span></div>
+<div>Done: <span id="done">0</span></div>
+<div>Active: <span id="active">0</span></div>
+<div>Pending: <span id="pending">0</span></div>
 </div>
 
 <div class="panel">
@@ -91,110 +62,157 @@ h2 { color: #7aa2ff; }
 
 <script>
 
-let sim = { nodes: {}, tasks: {}, cycle_state: {} };
+let sim = {
+  nodes: {
+    A:{position:[10,10],priority:2},
+    B:{position:[40,25],priority:2},
+    C:{position:[70,15],priority:2},
+    D:{position:[20,70],priority:1},
+    E:{position:[75,75],priority:3}
+  },
+  tasks:{}
+};
 
-const map = document.getElementById('map');
-const ctx = map.getContext('2d');
-const W = map.width, H = map.height;
+let id=0;
 
-function worldToCanvas(x, y) {
-  return [x/100 * W, H - (y/100 * H)];
+const map=document.getElementById("map");
+const ctx=map.getContext("2d");
+
+function dist(a,b){
+  return Math.hypot(a[0]-b[0],a[1]-b[1]);
 }
 
-function drawNode(id, n) {
-  const [x, y] = worldToCanvas(n.position[0], n.position[1]);
+function score(node,task,d){
 
-  let color = '#3b82f6';
-  if (n.role === 'forward') color = '#ef4444';
-  if (n.role === 'corridor') color = '#22c55e';
+  let benefit = task.type==="forward" ? 3 : 2;
+  let risk = d/100;
+  let time = d*0.05;
 
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, 8, 0, Math.PI*2);
-  ctx.fill();
+  let s = benefit - risk - time;
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(id, x + 10, y - 8);
+  if(task.type==="forward") s+=100;
+
+  return s;
 }
 
-function drawTask(id, t) {
-  const [x, y] = worldToCanvas(t.location[0], t.location[1]);
+map.onclick=(e)=>{
+  const rect=map.getBoundingClientRect();
 
-  if (t.status === 'PENDING') {
-    ctx.strokeStyle = '#ffffff';
-    ctx.strokeRect(x-5, y-5, 10, 10);
+  let x=(e.clientX-rect.left)/900*100;
+  let y=(600-(e.clientY-rect.top))/600*100;
 
-  } else if (t.status === 'ACTIVE') {
-    ctx.fillStyle = 'orange';
+  id++;
+
+  sim.tasks["T"+id]={
+    location:[x,y],
+    type: Math.random()>0.7?"forward":"suppression",
+    status:"PENDING",
+    progress:0
+  };
+
+  draw();
+};
+
+function step(){
+
+  for(let t of Object.values(sim.tasks)){
+
+    if(t.status==="PENDING"){
+
+      let best=null;
+      let bestScore=-999;
+
+      for(let [nid,n] of Object.entries(sim.nodes)){
+        let d=dist(n.position,t.location);
+        let s=score(n,t,d);
+
+        if(s>bestScore){
+          bestScore=s;
+          best=nid;
+        }
+      }
+
+      t.assigned=best;
+      t.status="ACTIVE";
+    }
+
+    else if(t.status==="ACTIVE"){
+      t.progress+=0.2;
+      if(t.progress>=1){
+        t.status="DONE";
+      }
+    }
+  }
+
+  draw();
+}
+
+function draw(){
+
+  ctx.fillStyle="#0b1220";
+  ctx.fillRect(0,0,900,600);
+
+  for(let i=0;i<=10;i++){
+    ctx.strokeStyle="#1e293b";
+
     ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI*2);
+    ctx.moveTo(i*90,0);
+    ctx.lineTo(i*90,600);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0,i*60);
+    ctx.lineTo(900,i*60);
+    ctx.stroke();
+  }
+
+  for(let t of Object.values(sim.tasks)){
+    let x=t.location[0]/100*900;
+    let y=600-(t.location[1]/100*600);
+
+    if(t.status==="PENDING"){
+      ctx.strokeStyle="white";
+      ctx.strokeRect(x-5,y-5,10,10);
+    }
+    else if(t.status==="ACTIVE"){
+      ctx.fillStyle="orange";
+      ctx.beginPath();
+      ctx.arc(x,y,6,0,6.28);
+      ctx.fill();
+    }
+    else{
+      ctx.fillStyle="gray";
+      ctx.fillRect(x-4,y-4,8,8);
+    }
+  }
+
+  for(let [id,n] of Object.entries(sim.nodes)){
+    let x=n.position[0]/100*900;
+    let y=600-(n.position[1]/100*600);
+
+    ctx.fillStyle="green";
+    ctx.beginPath();
+    ctx.arc(x,y,8,0,6.28);
     ctx.fill();
 
-  } else {
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(x-4, y-4, 8, 8);
+    ctx.fillStyle="white";
+    ctx.fillText(id,x+8,y-8);
   }
+
+  let done=0,active=0,pending=0;
+
+  for(let t of Object.values(sim.tasks)){
+    if(t.status==="DONE") done++;
+    else if(t.status==="ACTIVE") active++;
+    else pending++;
+  }
+
+  document.getElementById("done").innerText=done;
+  document.getElementById("active").innerText=active;
+  document.getElementById("pending").innerText=pending;
 }
 
-function render() {
-
-  ctx.fillStyle = '#0b1220';
-  ctx.fillRect(0,0,W,H);
-
-  ctx.strokeStyle = '#1e293b';
-  for (let i=0;i<=10;i++){
-    ctx.beginPath();
-    ctx.moveTo(i*W/10,0);
-    ctx.lineTo(i*W/10,H);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0,i*H/10);
-    ctx.lineTo(W,i*H/10);
-    ctx.stroke();
-  }
-
-  for (const [id, t] of Object.entries(sim.tasks || {})) {
-    drawTask(id, t);
-  }
-
-  for (const [id, n] of Object.entries(sim.nodes || {})) {
-    drawNode(id, n);
-  }
-
-  const c = sim.cycle_state || {};
-  document.getElementById('done').innerText = c.done ?? 0;
-  document.getElementById('active').innerText = c.active ?? 0;
-  document.getElementById('pending').innerText = c.pending ?? 0;
-}
-
-async function stepOnce() {
-  const res = await fetch('/state');
-  sim = await res.json();
-  render();
-}
-
-map.addEventListener('click', async (ev) => {
-
-  const rect = map.getBoundingClientRect();
-  const cx = ev.clientX - rect.left;
-  const cy = ev.clientY - rect.top;
-
-  const x = (cx / W) * 100;
-  const y = ((H - cy) / H) * 100;
-
-  const type = document.getElementById('eventType').value;
-
-  await fetch('/add_event', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({x, y, type})
-  });
-
-  await stepOnce();
-});
-
-stepOnce();
+draw();
 
 </script>
 
